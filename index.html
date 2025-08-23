@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Pew Pew Payment Wars - EzyPay Battle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+  <script src="sketch.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #FF6B35, #FF8C42);
+      font-family: 'Orbitron', 'Courier New', monospace;
+      color: #1a1a1a;
+    }
+    
+    .game-container {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    
+    .leaderboard {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+      min-width: 300px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      color: #1a1a1a;
+    }
+    
+    .player-form {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      color: #1a1a1a;
+    }
+    
+    .player-form input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #333;
+    }
+    
+    .player-form button {
+      width: 100%;
+      padding: 12px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+    
+    .player-form button:hover {
+      background: #45a049;
+    }
+    
+    .leaderboard h2 {
+      margin-top: 0;
+      color: #FF6B35;
+      text-align: center;
+      font-weight: 700;
+    }
+    
+    .leaderboard-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(26, 26, 26, 0.3);
+      color: #1a1a1a;
+    }
+    
+    .leaderboard-item:first-child {
+      background: rgba(255, 215, 0, 0.3);
+      border-radius: 5px;
+      padding: 10px;
+      margin: 5px 0;
+      font-weight: bold;
+      color: #1a1a1a;
+    }
+    
+    .game-title {
+      text-align: center;
+      font-size: 2.5em;
+      margin-bottom: 20px;
+      color: #1a1a1a;
+      text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.8);
+      font-weight: 900;
+      letter-spacing: 2px;
+    }
+    
+    .game-subtitle {
+      text-align: center;
+      font-size: 1.2em;
+      margin-bottom: 30px;
+      color: #1a1a1a;
+      font-weight: 700;
+      text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.6);
+    }
+  </style>
+</head>
+<body>
+  <div class="game-title">Pew Pew Payment Wars 💸</div>
+  <div class="game-subtitle">Defend EzyPay from the competition! Enter your name and compete for the highest score!</div>
+  
+  <div class="game-container">
+    <div class="leaderboard">
+      <div class="player-form">
+        <h3>Enter Your Name</h3>
+        <input type="text" id="playerName" placeholder="Your Name" maxlength="20">
+        <button onclick="startGame()">Start Game</button>
+      </div>
+      
+      <h2>🏆 Leaderboard 🏆</h2>
+      <div id="leaderboardList">
+        <div class="leaderboard-item">
+          <span>No scores yet</span>
+          <span>0</span>
+        </div>
+      </div>
+      <button onclick="testLeaderboard()" style="margin-top: 10px; padding: 8px; background: #FF6B35; color: white; border: none; border-radius: 5px; cursor: pointer;">Test Leaderboard</button>
+      <button onclick="resetLeaderboard()" style="margin-top: 10px; margin-left: 10px; padding: 8px; background: #FF4444; color: white; border: none; border-radius: 5px; cursor: pointer;">Reset Leaderboard</button>
+      <button onclick="saveCurrentScore()" style="margin-top: 10px; margin-left: 10px; padding: 8px; background: #44AA44; color: white; border: none; border-radius: 5px; cursor: pointer;">Save Score (Manual)</button>
+      <button onclick="testRapidFire()" style="margin-top: 10px; margin-left: 10px; padding: 8px; background: #FF8800; color: white; border: none; border-radius: 5px; cursor: pointer;">Test Rapid Fire</button>
+    </div>
+    
+    <div id="gameCanvas"></div>
+  </div>
+</body>
+</html>
+
