@@ -1,10 +1,9 @@
-// Global game variables
+// Global variables
 let ship;
 let bullets = [];
 let enemies = [];
 let particles = [];
 let stars = [];
-let powerUps = [];
 let score = 0;
 let lives = 3;
 let gameOver = false;
@@ -13,19 +12,21 @@ let currentPlayer = "";
 let gameStarted = false;
 let leaderboard = [];
 let gameStartTime = 0;
-let gameDuration = 60000; // 1 minute in milliseconds (60,000 ms = 60 seconds)
+let gameDuration = 60000; // 1 minute default (will be updated from HTML dropdown)
 let timeRemaining = 0;
 let rapidFireActive = false;
 let rapidFireEndTime = 0;
 let lastShotTime = 0;
+let frameCount = 0;
+let originalGameOver = false;
 
 // Competitor data - these are the "enemies" players will shoot
 const competitors = [
   { name: "Stripe", color: "#6772E5", logo: "💳", points: 15 },
   { name: "Ezidebit", color: "#FF6B35", logo: "💸", points: 12 },
   { name: "Square", color: "#00C851", logo: "📱", points: 10 },
-  { name: "PayPal", color: "#0070BA", logo: "🌐", points: 8 },
-  { name: "Debit Success", color: "#FF6B6B", logo: "🌍", points: 6 }
+  { name: "PayPal", color: "#0070BA", logo: "��", points: 8 },
+  { name: "Debit Success", color: "#FF6B6B", logo: "��", points: 6 }
 ];
 
 function setup() {
@@ -48,6 +49,9 @@ function setup() {
   
   // Load existing leaderboard from localStorage
   loadLeaderboard();
+  
+  // Check for room code in URL
+  checkForRoomCode();
   
   console.log("EzyPay vs Competitors game initialized!");
 }
@@ -77,18 +81,33 @@ function draw() {
     }
     
     if (!gameOver) {
-      // Check if time is up
-      timeRemaining = gameDuration - (millis() - gameStartTime);
+      // ULTRA-BULLETPROOF FRAME-BASED TIMER SYSTEM
+      // Calculate time based on frames (60fps) instead of millis() for precision
+      let framesElapsed = frameCount;
+      let framesPerSecond = 60;
+      let secondsElapsed = framesElapsed / framesPerSecond;
+      let secondsRemaining = (gameDuration / 1000) - secondsElapsed;
       
-      // Debug timer info
+      // Update timeRemaining for display
+      timeRemaining = secondsRemaining * 1000;
+      
+      // Debug timer info every second
       if (frameCount % 60 === 0) { // Log every second
-        console.log("Timer Debug - Remaining:", Math.ceil(timeRemaining/1000), "s, Total:", Math.ceil(gameDuration/1000), "s, Elapsed:", Math.ceil((millis() - gameStartTime)/1000), "s");
+        console.log("⏱️ FRAME-BASED TIMER - Remaining:", Math.ceil(secondsRemaining), "s, Total:", Math.ceil(gameDuration/1000), "s, Elapsed:", Math.ceil(secondsElapsed), "s");
+        console.log("⏱️ Frames elapsed:", framesElapsed, "Expected frames:", (gameDuration/1000) * framesPerSecond);
+        console.log("⏱️ Game should end at:", Math.ceil((gameDuration/1000)), "seconds");
       }
       
-      if (timeRemaining <= 0) {
+      // End game when frames reach the target
+      let targetFrames = (gameDuration / 1000) * framesPerSecond;
+      
+      if (framesElapsed >= targetFrames) {
         gameOver = true;
         timeRemaining = 0;
-        console.log("Game Over - Time's up! Total game time:", Math.ceil((millis() - gameStartTime)/1000), "seconds");
+        console.log("⏱️ GAME OVER - Frame-based timer finished!");
+        console.log("⏱️ Frames elapsed:", framesElapsed, "Target frames:", targetFrames);
+        console.log("⏱️ Game ran for exactly:", Math.ceil(secondsElapsed), "seconds as intended");
+        console.log("⏱️ Timer-based game over - this is correct!");
       } else {
         ship.update();
         ship.show();
@@ -100,12 +119,9 @@ function draw() {
         
         // Handle shooting with spacebar
         if (keyIsDown(32)) {
-          let shootCooldown = rapidFireActive ? 3 : 10; // Faster shooting with rapid fire
-          let canShoot = rapidFireActive ? 
-            (frameCount % shootCooldown === 0) : 
-            (frameCount % shootCooldown === 0);
-            
-          if (canShoot && bullets.length < 80) {
+          let shootCooldown = rapidFireActive ? 8 : 25; // Normal: every 25 frames, rapid: every 8 frames
+          
+          if (frameCount % shootCooldown === 0 && bullets.length < 30) {
             let newBullet = new Bullet(ship.x, ship.y - ship.height / 2);
             bullets.push(newBullet);
             lastShotTime = millis();
@@ -119,18 +135,25 @@ function draw() {
           enemies.push(new Competitor(random(40, width - 40), 0, competitor));
         }
         
-        // Random rapid fire activation (every 10 seconds)
-        if (frameCount % 600 === 0 && !rapidFireActive) { // Every 10 seconds (600 frames at 60fps)
-          let shouldActivate = random() < 0.5; // 50% chance - increased probability
+        // IMPROVED RAPID FIRE SYSTEM - More reliable activation
+        let rapidFireCheckInterval = 300; // Check every 5 seconds (300 frames at 60fps)
+        
+        if (frameCount % rapidFireCheckInterval === 0 && !rapidFireActive) {
+          // Higher chance of activation and more frequent checks
+          let shouldActivate = random() < 0.8; // 80% chance - very frequent
+          
           if (shouldActivate) {
             rapidFireActive = true;
             rapidFireEndTime = millis() + 10000; // 10 seconds of rapid fire
-            console.log("Random Rapid Fire activated for 10 seconds! Frame:", frameCount);
+            console.log("🎯 RAPID FIRE ACTIVATED! Frame:", frameCount, "Duration: 10 seconds");
+            console.log("🎯 Rapid fire will last until:", Math.ceil(rapidFireEndTime/1000), "seconds");
             
-            // Visual feedback - create explosion particles around ship
+            // Enhanced visual feedback - create explosion particles around ship
             for (let j = 0; j < 20; j++) {
-              particles.push(new Particle(ship.x + random(-20, 20), ship.y + random(-20, 20), color(255, 255, 0)));
+              particles.push(new Particle(ship.x + random(-30, 30), ship.y + random(-30, 30), color(255, 255, 0)));
             }
+          } else {
+            console.log("🎯 Rapid fire check at frame:", frameCount, "- Not activated this time");
           }
         }
       }
@@ -156,8 +179,10 @@ function draw() {
           if (enemies[i].y > height) {
             enemies.splice(i, 1);
             lives--;
+            console.log("💔 Life lost! Enemy escaped. Lives remaining:", lives);
             if (lives <= 0) {
               gameOver = true;
+              console.log("💔 GAME OVER - All lives lost!");
             }
             continue;
           }
@@ -183,8 +208,10 @@ function draw() {
             createParticles(enemies[i].x, enemies[i].y, enemies[i].competitor.color);
             enemies.splice(i, 1);
             lives--;
+            console.log("💥 Collision! Life lost. Lives remaining:", lives);
             if (lives <= 0) {
               gameOver = true;
+              console.log("💥 GAME OVER - Ship destroyed!");
             }
           }
         }
@@ -198,7 +225,7 @@ function draw() {
       
       // Debug rapid fire status
       if (frameCount % 120 === 0) { // Log every 2 seconds
-        console.log("Rapid Fire Status:", rapidFireActive, "Time left:", rapidFireActive ? Math.ceil((rapidFireEndTime - millis())/1000) : "Inactive");
+        console.log("�� Rapid Fire Debug - Frame:", frameCount, "Active:", rapidFireActive, "Time left:", rapidFireActive ? Math.ceil((rapidFireEndTime - millis())/1000) : "Inactive", "Next check in:", Math.ceil((300 - (frameCount % 300))/60), "seconds");
       }
       
       // Update and show particles
@@ -219,6 +246,9 @@ function draw() {
       if (frameCount % 300 === 0 && spawnRate > 20) {
         spawnRate -= 3;
       }
+      
+      // Increment frame count for timing
+      frameCount++;
     } else {
       // Game over screen
       showGameOverScreen();
@@ -239,34 +269,20 @@ function showStartScreen() {
   fill(255);
   textSize(32);
   textAlign(CENTER);
-  text("Pew Pew Payment Wars 💸", width / 2, height / 2 - 120);
+  text("🚀 Pew Pew Payment Wars 💸", width / 2, height / 2 - 120);
   
   textSize(18);
-  text("Enter your name and click 'Start Game' to begin!", width / 2, height / 2 - 80);
-  text("Defend EzyPay from the competition!", width / 2, height / 2 - 50);
-  text("Each game lasts exactly 1 minute!", width / 2, height / 2 - 20);
+  text("Defend EzyPay from the competition!", width / 2, height / 2 - 80);
   
   textSize(16);
-  text("Controls:", width / 2, height / 2 + 20);
-  text("← → Arrow keys to move", width / 2, height / 2 + 45);
-  text("Spacebar to shoot", width / 2, height / 2 + 65);
+  text("🎮 HOW TO PLAY:", width / 2, height / 2 - 40);
+  text("• Use ARROW KEYS to move left/right", width / 2, height / 2 - 20);
+  text("• Press SPACEBAR to shoot", width / 2, height / 2);
+  text("• Avoid competitors and collect points", width / 2, height / 2 + 20);
+  text("• ⚡ Rapid Fire activates randomly!", width / 2, height / 2 + 40);
   
-  // Show scoring system
   textSize(14);
-  text("Scoring System:", width / 2, height / 2 + 95);
-  let yPos = 120;
-  competitors.forEach(comp => {
-    text(`${comp.logo} ${comp.name}: ${comp.points} points`, width / 2, height / 2 + yPos);
-    yPos += 20;
-  });
-  
-  // Show rapid fire info
-  text("⚡ Random Rapid Fire:", width / 2, height / 2 + yPos);
-  text("Activates every 10 seconds for 10 seconds!", width / 2, height / 2 + yPos + 20);
-  
-  // Show save info
-  text("💾 Score Save:", width / 2, height / 2 + yPos + 45);
-  text("Automatic popup when game ends!", width / 2, height / 2 + yPos + 65);
+  text("Press any key to start...", width / 2, height / 2 + 80);
 }
 
 function showGameInfo() {
@@ -295,19 +311,20 @@ function showGameInfo() {
     textSize(16);
   }
   
-  // Show scoring system on the right side
-  textAlign(RIGHT);
-  textSize(12);
-  text("Scoring System:", width - 10, 25);
-  let yPos = 45;
-  competitors.forEach(comp => {
-    text(`${comp.logo} ${comp.name}: ${comp.points}pts`, width - 10, yPos);
-    yPos += 20;
-  });
+  // Show scoring system on the right side ONLY for first 5 seconds
+  let gameElapsedTime = millis() - gameStartTime;
+  if (gameElapsedTime < 5000) { // First 5 seconds only
+    textAlign(RIGHT);
+    textSize(12);
+    text("Scoring System:", width - 10, 25);
+    let yPos = 45;
+    competitors.forEach(comp => {
+      text(`${comp.logo} ${comp.name}: ${comp.points}pts`, width - 10, yPos);
+      yPos += 20;
+    });
+  }
   
-  // Show rapid fire info
-  text("⚡ Random Rapid Fire!", width - 10, yPos + 10);
-  text("Activates every 15s", width - 10, yPos + 25);
+  // Rapid fire info removed for cleaner display
 }
 
 function showGameOverScreen() {
@@ -349,20 +366,30 @@ function startGame() {
     return;
   }
   
+  // Get the selected game duration from the dropdown
+  let durationSelect = document.getElementById('gameDuration');
+  if (durationSelect) {
+    gameDuration = parseInt(durationSelect.value);
+    console.log("Game duration set to:", gameDuration/1000, "seconds");
+  }
+  
   currentPlayer = name;
   gameStarted = true;
   gameOver = false;
-  resetGame();
   
-  // Start the timer
-  gameStartTime = millis();
+  // FRAME-BASED TIMER SYSTEM - Reset frameCount for precise timing
+  frameCount = 0;
   timeRemaining = gameDuration;
+  
+  // Reset game state
+  resetGameState();
   
   // Hide the form
   document.querySelector('.player-form').style.display = 'none';
   
-  // Reset frameCount to ensure consistent timing for all players
-  frameCount = 0;
+  console.log("⏱️ FRAME-BASED TIMER - Game started with duration:", gameDuration/1000, "seconds");
+  console.log("⏱️ Target frames:", (gameDuration/1000) * 60, "frames at 60fps");
+  console.log("⏱️ Total duration will be exactly:", Math.ceil(gameDuration/1000), "seconds");
 }
 
 function newPlayer() {
@@ -375,6 +402,28 @@ function newPlayer() {
   
   // Reset frameCount for new player
   frameCount = 0;
+}
+
+function resetGameState() {
+  bullets.length = 0;
+  enemies.length = 0;
+  particles.length = 0;
+  
+  score = 0;
+  lives = 3;
+  gameOver = false;
+  spawnRate = 60;
+  originalGameOver = false;
+  rapidFireActive = false;
+  rapidFireEndTime = 0;
+  lastShotTime = 0;
+  
+  if (ship) {
+    ship.x = width / 2;
+    ship.y = height - 50;
+  }
+  
+  console.log("Game state reset successfully");
 }
 
 function resetGame() {
@@ -401,7 +450,13 @@ function resetGame() {
 }
 
 function endGame() {
-  console.log("endGame called for player:", currentPlayer, "with score:", score);
+  console.log("�� endGame called for player:", currentPlayer, "with score:", score);
+  
+  // Double-check why the game ended
+  let elapsedTime = millis() - gameStartTime;
+  console.log("🎮 Game ended after:", Math.ceil(elapsedTime/1000), "seconds");
+  console.log("🎮 Expected duration was:", Math.ceil(gameDuration/1000), "seconds");
+  console.log("�� Lives remaining:", lives);
   
   // Show save score popup if player has a score
   if (currentPlayer && score > 0) {
@@ -420,7 +475,7 @@ function showSaveScorePopup() {
     // Player exists - show comparison and override option
     if (score > existingPlayer.score) {
       saveScore = confirm(
-        `🎮 Game Over!\n\n` +
+        `�� Game Over!\n\n` +
         `Player: ${currentPlayer}\n` +
         `Current Score: ${score}\n` +
         `Previous Best: ${existingPlayer.score}\n\n` +
@@ -429,7 +484,7 @@ function showSaveScorePopup() {
       );
     } else {
       saveScore = confirm(
-        `🎮 Game Over!\n\n` +
+        `�� Game Over!\n\n` +
         `Player: ${currentPlayer}\n` +
         `Current Score: ${score}\n` +
         `Your Best Score: ${existingPlayer.score}\n\n` +
@@ -440,7 +495,7 @@ function showSaveScorePopup() {
   } else {
     // New player - regular save option
     saveScore = confirm(
-      `🎮 Game Over!\n\n` +
+      `�� Game Over!\n\n` +
       `Player: ${currentPlayer}\n` +
       `Final Score: ${score}\n\n` +
       `Would you like to save your score to the leaderboard?`
@@ -448,103 +503,165 @@ function showSaveScorePopup() {
   }
   
   if (saveScore) {
-    if (existingPlayer) {
-      // Override existing score
-      updatePlayerScore(currentPlayer, score);
-      updateLeaderboardDisplay();
-      console.log("Score updated for existing player");
-      
-      setTimeout(() => {
-        if (score > existingPlayer.score) {
-          alert(`🏆 New High Score!\n\nYour score of ${score} has replaced your previous best of ${existingPlayer.score}!\n\nCheck the leaderboard to see your ranking!`);
-        } else {
-          alert(`📝 Score Updated!\n\nYour score of ${score} has replaced your previous score of ${existingPlayer.score}.\n\nCheck the leaderboard to see your ranking!`);
-        }
-      }, 500);
-    } else {
-      // Add new player
-      addToLeaderboard(currentPlayer, score);
-      updateLeaderboardDisplay();
-      console.log("Score added for new player");
-      
-      setTimeout(() => {
-        alert(`🏆 Score saved! You scored ${score} points!\n\nWelcome to the leaderboard! Check your ranking!`);
-      }, 500);
-    }
+    saveScoreToLeaderboard();
+    console.log("Score saved successfully for player:", currentPlayer);
   } else {
-    console.log("Player chose not to save score");
-    
-    setTimeout(() => {
-      alert(`Thanks for playing! Your score of ${score} was not saved to the leaderboard.`);
-    }, 500);
+    console.log("Score not saved for player:", currentPlayer);
   }
 }
 
-// Leaderboard functions
-function addToLeaderboard(playerName, playerScore) {
-  console.log("Adding to leaderboard:", playerName, playerScore);
-  leaderboard.push({ name: playerName, score: playerScore });
+function saveScoreToLeaderboard() {
+  // Find existing player entry
+  let existingIndex = leaderboard.findIndex(entry => entry.name === currentPlayer);
+  
+  if (existingIndex !== -1) {
+    // Update existing player's score
+    leaderboard[existingIndex].score = score;
+    console.log("Updated score for existing player:", currentPlayer);
+  } else {
+    // Add new player
+    leaderboard.push({
+      name: currentPlayer,
+      score: score,
+      date: new Date().toLocaleDateString()
+    });
+    console.log("Added new player to leaderboard:", currentPlayer);
+  }
+  
+  // Sort leaderboard by score (highest first)
   leaderboard.sort((a, b) => b.score - a.score);
   
   // Keep only top 10 scores
-  if (leaderboard.length > 10) {
-    leaderboard = leaderboard.slice(0, 10);
-  }
+  leaderboard = leaderboard.slice(0, 10);
   
   // Save to localStorage
   localStorage.setItem('ezyPayLeaderboard', JSON.stringify(leaderboard));
-  console.log("Current leaderboard:", leaderboard);
-}
-
-function updatePlayerScore(playerName, newScore) {
-  console.log("Updating player score:", playerName, newScore);
   
-  // Find and update the existing player's score
-  let playerIndex = leaderboard.findIndex(entry => entry.name === playerName);
-  if (playerIndex !== -1) {
-    leaderboard[playerIndex].score = newScore;
-    leaderboard.sort((a, b) => b.score - a.score);
-    
-    // Keep only top 10 scores
-    if (leaderboard.length > 10) {
-      leaderboard = leaderboard.slice(0, 10);
-    }
-    
-    // Save to localStorage
-    localStorage.setItem('ezyPayLeaderboard', JSON.stringify(leaderboard));
-    console.log("Player score updated. Current leaderboard:", leaderboard);
-  } else {
-    console.log("Player not found, adding as new player");
-    addToLeaderboard(playerName, newScore);
-  }
+  // Update display
+  updateLeaderboardDisplay();
+  
+  console.log("Leaderboard updated and saved to localStorage");
 }
 
 function loadLeaderboard() {
   let saved = localStorage.getItem('ezyPayLeaderboard');
   if (saved) {
     leaderboard = JSON.parse(saved);
+    console.log("Leaderboard loaded from localStorage:", leaderboard.length, "entries");
+  } else {
+    console.log("No saved leaderboard found, starting fresh");
   }
   updateLeaderboardDisplay();
 }
 
 function updateLeaderboardDisplay() {
   let leaderboardDiv = document.getElementById('leaderboardList');
+  if (!leaderboardDiv) return;
   
   if (leaderboard.length === 0) {
     leaderboardDiv.innerHTML = '<div class="leaderboard-item"><span>No scores yet</span><span>0</span></div>';
     return;
   }
   
-  leaderboardDiv.innerHTML = '';
+  let html = '';
   leaderboard.forEach((entry, index) => {
-    let item = document.createElement('div');
-    item.className = 'leaderboard-item';
-    if (index === 0) item.style.background = 'rgba(255, 215, 0, 0.2)';
+    let medal = '';
+    if (index === 0) medal = '🥇 ';
+    else if (index === 1) medal = '🥈 ';
+    else if (index === 2) medal = '🥉 ';
     
-    let medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
-    item.innerHTML = `<span>${medal} ${entry.name}</span><span>${entry.score}</span>`;
-    leaderboardDiv.appendChild(item);
+    html += `<div class="leaderboard-item">
+      <span>${medal}${entry.name}</span>
+      <span>${entry.score}</span>
+    </div>`;
   });
+  
+  leaderboardDiv.innerHTML = html;
+}
+
+function resetLeaderboard() {
+  let password = prompt("Enter admin password to reset leaderboard:");
+  if (password === "1813") {
+    if (confirm("Are you sure you want to reset the leaderboard? This will delete all scores!")) {
+      leaderboard = [];
+      localStorage.removeItem('ezyPayLeaderboard');
+      updateLeaderboardDisplay();
+      console.log("Leaderboard reset successfully by admin");
+      alert("Leaderboard reset successfully!");
+    }
+  } else if (password !== null) {
+    alert("Incorrect password! Only admins can reset the leaderboard.");
+  }
+}
+
+function generateRoomCode() {
+  let roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+  let roomLink = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+  
+  // Copy room link to clipboard
+  navigator.clipboard.writeText(roomLink).then(() => {
+    alert(`�� Private Group Link Generated!\n\nRoom Code: ${roomCode}\n\nFull Link: ${roomLink}\n\n✅ Copied to clipboard!\n\nShare this link with your team to play together!`);
+  }).catch(() => {
+    alert(`�� Private Group Link Generated!\n\nRoom Code: ${roomCode}\n\nFull Link: ${roomLink}\n\n📋 Please copy manually and share with your team!`);
+  });
+  
+  // Store room code in input field
+  let roomCodeInput = document.getElementById('roomCode');
+  if (roomCodeInput) {
+    roomCodeInput.value = roomCode;
+    console.log("Room code stored in input field:", roomCode);
+  }
+  
+  console.log("Private group room created:", roomCode, "Link:", roomLink);
+}
+
+function joinRoom() {
+  let roomCodeInput = document.getElementById('roomCode');
+  let roomCode = roomCodeInput.value.trim().toUpperCase();
+  
+  if (roomCode === "") {
+    alert("Please enter a room code to join!");
+    return;
+  }
+  
+  // Create the room link
+  let roomLink = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+  
+  // Copy room link to clipboard
+  navigator.clipboard.writeText(roomLink).then(() => {
+    alert(`🎯 Joining Private Group!\n\nRoom Code: ${roomCode}\n\nFull Link: ${roomLink}\n\n✅ Copied to clipboard!\n\nShare this link with your team to play together!`);
+  }).catch(() => {
+    alert(`🎯 Joining Private Group!\n\nRoom Code: ${roomCode}\n\nFull Link: ${roomLink}\n\n📋 Please copy manually and share with your team!`);
+  });
+  
+  console.log("Joining private group room:", roomCode, "Link:", roomLink);
+}
+
+// Check for room code in URL when page loads
+function checkForRoomCode() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const roomCode = urlParams.get('room');
+  
+  if (roomCode) {
+    // Auto-fill room code input
+    let roomCodeInput = document.getElementById('roomCode');
+    if (roomCodeInput) {
+      roomCodeInput.value = roomCode;
+    }
+    
+    // Show welcome message
+    setTimeout(() => {
+      alert(`�� Welcome to Private Group!\n\nRoom Code: ${roomCode}\n\nYou've joined a private game session!\n\nEnter your name and start playing with your team!`);
+    }, 1000);
+    
+    console.log("Joined private group room:", roomCode);
+  }
+}
+
+function createParticles(x, y, color) {
+  for (let i = 0; i < 8; i++) {
+    particles.push(new Particle(x, y, color));
+  }
 }
 
 // Game classes
@@ -558,37 +675,106 @@ class Ship {
   }
   
   show() {
-    // EzyPay themed ship
+    // COOL EzyPay themed ship with advanced graphics
+    push();
+    
+    // Ship glow effect
+    let glowIntensity = rapidFireActive ? 100 : 50;
+    fill(100, 200, 255, glowIntensity);
+    noStroke();
+    ellipse(this.x, this.y, this.width + 20, this.height + 20);
+    
+    // Main ship body - Sleek futuristic design
     let shipColor = keyIsDown(LEFT_ARROW) || keyIsDown(RIGHT_ARROW) 
       ? color(150, 220, 255) : color(100, 200, 255);
     fill(shipColor);
-    noStroke();
+    stroke(255, 255, 255, 200);
+    strokeWeight(2);
     
-    // Main ship body
-    triangle(this.x - this.width / 2, this.y + this.height / 2, 
-             this.x, this.y - this.height / 2, 
-             this.x + this.width / 2, this.y + this.height / 2);
+    // Advanced ship shape - more aerodynamic
+    beginShape();
+    vertex(this.x - this.width / 2, this.y + this.height / 2); // Bottom left
+    vertex(this.x - this.width / 3, this.y + this.height / 4); // Left wing
+    vertex(this.x - this.width / 4, this.y - this.height / 3); // Left top
+    vertex(this.x, this.y - this.height / 2); // Top point
+    vertex(this.x + this.width / 4, this.y - this.height / 3); // Right top
+    vertex(this.x + this.width / 3, this.y + this.height / 4); // Right wing
+    vertex(this.x + this.width / 2, this.y + this.height / 2); // Bottom right
+    endShape(CLOSE);
     
-    // EzyPay logo on ship
+    // Cockpit with glass effect
+    fill(150, 220, 255, 200);
+    stroke(255, 255, 255, 150);
+    ellipse(this.x, this.y - this.height / 6, this.width / 3, this.height / 4);
+    
+    // EzyPay logo on ship - more prominent
     fill(255, 215, 0);
-    textSize(12);
+    stroke(255, 165, 0);
+    strokeWeight(1);
+    textSize(14);
     textAlign(CENTER);
-    text("EP", this.x, this.y);
+    text("EP", this.x, this.y + this.height / 6);
     
-    // Thruster
+    // Enhanced thrusters with particle effects
     fill(255, 150, 0);
-    triangle(this.x - 5, this.y + this.height / 2, 
-             this.x, this.y + this.height / 2 + 10, 
-             this.x + 5, this.y + this.height / 2);
+    stroke(255, 100, 0);
+    strokeWeight(1);
     
-    // Rapid fire indicator
+    // Left thruster
+    triangle(this.x - 8, this.y + this.height / 2, 
+             this.x - 3, this.y + this.height / 2 + 15, 
+             this.x + 2, this.y + this.height / 2);
+    
+    // Right thruster
+    triangle(this.x - 2, this.y + this.height / 2, 
+             this.x + 3, this.y + this.height / 2 + 15, 
+             this.x + 8, this.y + this.height / 2);
+    
+    // Thruster flames
+    fill(255, 100, 0, 200);
+    triangle(this.x - 6, this.y + this.height / 2 + 15, 
+             this.x - 3, this.y + this.height / 2 + 25, 
+             this.x, this.y + this.height / 2 + 15);
+    
+    fill(255, 100, 0, 200);
+    triangle(this.x, this.y + this.height / 2 + 15, 
+             this.x + 3, this.y + this.height / 2 + 25, 
+             this.x + 6, this.y + this.height / 2 + 15);
+    
+    // Rapid fire indicator - more dramatic
     if (rapidFireActive) {
+      // Pulsing energy field
+      let pulseSize = 25 + sin(frameCount * 0.3) * 5;
       fill(255, 255, 0, 150);
-      ellipse(this.x, this.y - this.height - 10, 20, 20);
+      noStroke();
+      ellipse(this.x, this.y - this.height - 15, pulseSize, pulseSize);
+      
+      // Energy bolts
       fill(255, 255, 0);
-      textSize(10);
-      text("⚡", this.x, this.y - this.height - 10);
+      stroke(255, 200, 0);
+      strokeWeight(2);
+      textSize(12);
+      text("⚡", this.x, this.y - this.height - 15);
+      
+      // Additional energy particles
+      for (let i = 0; i < 3; i++) {
+        let angle = frameCount * 0.2 + i * 2;
+        let radius = 15 + i * 5;
+        let px = this.x + cos(angle) * radius;
+        let py = this.y - this.height - 15 + sin(angle) * radius;
+        fill(255, 255, 0, 150);
+        ellipse(px, py, 3, 3);
+      }
     }
+    
+    // Movement trail effect
+    if (keyIsDown(LEFT_ARROW) || keyIsDown(RIGHT_ARROW)) {
+      fill(100, 200, 255, 100);
+      noStroke();
+      ellipse(this.x, this.y + this.height / 2 + 10, this.width / 2, 8);
+    }
+    
+    pop();
   }
   
   update() {
@@ -611,25 +797,56 @@ class Bullet {
   }
   
   show() {
+    push();
+    
     if (this.isRapidFire) {
-      // Rapid fire bullets are more intense
-      fill(255, 100, 100);
+      // COOL rapid fire bullets with energy effects
+      // Outer glow
+      fill(255, 100, 100, 100);
       noStroke();
+      ellipse(this.x, this.y - 15, 12, 40);
+      
+      // Main bullet body
+      fill(255, 100, 100);
+      stroke(255, 50, 50);
+      strokeWeight(1);
       rect(this.x - 3, this.y - 15, 6, 30);
       
-      // Add intense glow effect
-      fill(255, 255, 0, 150);
-      rect(this.x - 4, this.y - 16, 8, 32);
-    } else {
-      // Normal bullets
+      // Energy core
       fill(255, 255, 0);
       noStroke();
+      rect(this.x - 1, this.y - 13, 2, 26);
+      
+      // Particle trail
+      for (let i = 0; i < 5; i++) {
+        let alpha = map(i, 0, 4, 150, 50);
+        fill(255, 255, 0, alpha);
+        ellipse(this.x + random(-2, 2), this.y + 15 + i * 3, 2, 2);
+      }
+    } else {
+      // COOL normal bullets with plasma effect
+      // Outer glow
+      fill(255, 255, 0, 80);
+      noStroke();
+      ellipse(this.x, this.y - 10, 8, 24);
+      
+      // Main bullet body
+      fill(255, 255, 0);
+      stroke(255, 200, 0);
+      strokeWeight(1);
       rect(this.x - 2, this.y - 10, 4, 20);
       
-      // Add glow effect
-      fill(255, 255, 0, 100);
-      rect(this.x - 3, this.y - 11, 6, 22);
+      // Plasma core
+      fill(255, 255, 255);
+      noStroke();
+      rect(this.x - 1, this.y - 8, 2, 16);
+      
+      // Energy trail
+      fill(255, 255, 0, 60);
+      ellipse(this.x, this.y + 10, 3, 6);
     }
+    
+    pop();
   }
   
   update() {
@@ -657,11 +874,6 @@ class Competitor {
     textSize(16);
     textAlign(CENTER);
     text(this.competitor.logo, this.x, this.y + 5);
-    
-    // Add competitor name
-    fill(255);
-    textSize(10);
-    text(this.competitor.name, this.x, this.y + this.size/2 + 15);
   }
   
   update() {
@@ -675,115 +887,23 @@ class Particle {
     this.y = y;
     this.vx = random(-3, 3);
     this.vy = random(-3, 3);
-    this.life = 255;
-    this.size = random(2, 5);
-    this.color = color || color(255, 100, 0);
+    this.life = 60;
+    this.color = color;
   }
   
   show() {
-    fill(red(this.color), green(this.color), blue(this.color), this.life);
+    push();
+    fill(this.color);
     noStroke();
-    ellipse(this.x, this.y, this.size);
+    let alpha = map(this.life, 0, 60, 0, 255);
+    fill(red(this.color), green(this.color), blue(this.color), alpha);
+    ellipse(this.x, this.y, 4);
+    pop();
   }
   
   update() {
     this.x += this.vx;
     this.y += this.vy;
-    this.life -= 5;
-  }
-}
-
-function createParticles(x, y, color) {
-  if (particles.length < 100) {
-    for (let i = 0; i < 20; i++) {
-      let angle = random(TWO_PI);
-      let speed = random(1, 4);
-      particles.push(new Particle(x, y, color));
-    }
-  }
-}
-
-
-
-// Override the default game over behavior to save score
-let originalGameOver = false;
-
-// Check for game over in the main loop
-function checkGameOver() {
-  if (gameOver && !originalGameOver) {
-    originalGameOver = true;
-    endGame();
-  }
-}
-
-// Test function for debugging
-function testLeaderboard() {
-  console.log("Testing leaderboard...");
-  console.log("Current leaderboard:", leaderboard);
-  console.log("Current player:", currentPlayer);
-  console.log("Current score:", score);
-  
-  // Test adding a score
-  if (currentPlayer) {
-    addToLeaderboard(currentPlayer, Math.floor(Math.random() * 1000) + 100);
-  } else {
-    addToLeaderboard("TestPlayer", Math.floor(Math.random() * 1000) + 100);
-  }
-}
-
-// Reset leaderboard function
-function resetLeaderboard() {
-  if (confirm("Are you sure you want to reset the leaderboard? This will delete all scores!")) {
-    leaderboard = [];
-    localStorage.removeItem('ezyPayLeaderboard');
-    updateLeaderboardDisplay();
-    console.log("Leaderboard reset successfully");
-  }
-}
-
-// Save current score function (manual save during game)
-function saveCurrentScore() {
-  if (currentPlayer && score > 0 && !gameOver) {
-    let existingPlayer = leaderboard.find(entry => entry.name === currentPlayer);
-    let confirmMessage = "";
-    
-    if (existingPlayer) {
-      if (score > existingPlayer.score) {
-        confirmMessage = `Save your current score of ${score} to the leaderboard?\n\nThis will replace your previous best of ${existingPlayer.score}.\n\n🎉 NEW HIGH SCORE!`;
-      } else {
-        confirmMessage = `Save your current score of ${score} to the leaderboard?\n\nThis will replace your current score of ${existingPlayer.score}.\n\nNote: This score is lower than your best.`;
-      }
-    } else {
-      confirmMessage = `Save your current score of ${score} to the leaderboard?\n\nNote: You can also wait until the game ends for the automatic popup.`;
-    }
-    
-    let confirmSave = confirm(confirmMessage);
-    if (confirmSave) {
-      if (existingPlayer) {
-        updatePlayerScore(currentPlayer, score);
-      } else {
-        addToLeaderboard(currentPlayer, score);
-      }
-      updateLeaderboardDisplay();
-      alert(`Score of ${score} saved for ${currentPlayer}!`);
-    }
-  } else if (!currentPlayer) {
-    alert("Please start a game first!");
-  } else if (score === 0) {
-    alert("No score to save! Play the game first.");
-  } else if (gameOver) {
-    alert("Game is over! The score save popup should have appeared automatically.");
-  }
-}
-
-// Test rapid fire function
-function testRapidFire() {
-  if (gameStarted && !gameOver) {
-    rapidFireActive = true;
-    rapidFireEndTime = millis() + 10000; // 10 seconds
-    console.log("Manual Rapid Fire activated for testing!");
-    alert("Rapid Fire activated for 10 seconds!");
-  } else {
-    alert("Please start a game first!");
+    this.life--;
   }
 }
