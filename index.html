@@ -42,7 +42,7 @@
       color: #1a1a1a;
     }
     
-    .player-form input {
+    .player-form input, .player-form select {
       width: 100%;
       padding: 10px;
       margin: 10px 0;
@@ -113,7 +113,12 @@
   </style>
 </head>
 <body>
-        <div class="player-form">
+  <div class="game-title">Pew Pew Payment Wars ��</div>
+  <div class="game-subtitle">Defend EzyPay from the competition! Enter your name and compete for the highest score!</div>
+  
+  <div class="game-container">
+    <div class="leaderboard">
+      <div class="player-form">
         <h3>Enter Your Name & Game Duration</h3>
         <input type="text" id="playerName" placeholder="Your Name" maxlength="20">
         <label for="gameDuration" style="display: block; margin-top: 15px; font-weight: 600;">Game Duration:</label>
@@ -134,6 +139,19 @@
         
         <button onclick="generateRoomCode()" style="margin-top: 10px; padding: 10px; background: #9C27B0; color: white; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 14px; transition: all 0.3s ease;">🎯 Generate Private Group Link</button>
         <button onclick="joinRoom()" style="margin-top: 10px; padding: 10px; background: #FF9800; color: white; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 14px; transition: all 0.3s ease;">🚀 Join Private Room</button>
-      </div></body>
+      </div>
+      
+      <h2>�� Leaderboard ��</h2>
+      <div id="leaderboardList">
+        <div class="leaderboard-item">
+          <span>No scores yet</span>
+          <span>0</span>
+        </div>
+      </div>
+      <button onclick="resetLeaderboard()" style="margin-top: 10px; padding: 8px; background: rgba(255, 68, 68, 0.3); color: #FF4444; border: 2px solid #FF4444; border-radius: 5px; cursor: pointer; width: 100%; font-size: 12px; transition: all 0.3s ease;">��️ Reset Leaderboard (Admin Only)</button>
+    </div>
+    
+    <div id="gameCanvas"></div>
+  </div>
+</body>
 </html>
-
