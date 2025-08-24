@@ -113,32 +113,27 @@
   </style>
 </head>
 <body>
-  <div class="game-title">Pew Pew Payment Wars 💸</div>
-  <div class="game-subtitle">Defend EzyPay from the competition! Enter your name and compete for the highest score!</div>
-  
-  <div class="game-container">
-    <div class="leaderboard">
-      <div class="player-form">
-        <h3>Enter Your Name</h3>
+        <div class="player-form">
+        <h3>Enter Your Name & Game Duration</h3>
         <input type="text" id="playerName" placeholder="Your Name" maxlength="20">
+        <label for="gameDuration" style="display: block; margin-top: 15px; font-weight: 600;">Game Duration:</label>
+        <select id="gameDuration">
+          <option value="60000">1 Minute</option>
+          <option value="120000" selected>2 Minutes</option>
+          <option value="180000">3 Minutes</option>
+          <option value="300000">5 Minutes</option>
+        </select>
+        
         <button onclick="startGame()">Start Game</button>
-      </div>
-      
-      <h2>🏆 Leaderboard 🏆</h2>
-      <div id="leaderboardList">
-        <div class="leaderboard-item">
-          <span>No scores yet</span>
-          <span>0</span>
-        </div>
-      </div>
-      <button onclick="testLeaderboard()" style="margin-top: 10px; padding: 8px; background: #FF6B35; color: white; border: none; border-radius: 5px; cursor: pointer;">Test Leaderboard</button>
-      <button onclick="resetLeaderboard()" style="margin-top: 10px; margin-left: 10px; padding: 8px; background: #FF4444; color: white; border: none; border-radius: 5px; cursor: pointer;">Reset Leaderboard</button>
-      <button onclick="saveCurrentScore()" style="margin-top: 10px; margin-left: 10px; padding: 8px; background: #44AA44; color: white; border: none; border-radius: 5px; cursor: pointer;">Save Score (Manual)</button>
-      <button onclick="testRapidFire()" style="margin-top: 10px; margin-left: 10px; padding: 8px; background: #FF8800; color: white; border: none; border-radius: 5px; cursor: pointer;">Test Rapid Fire</button>
-    </div>
-    
-    <div id="gameCanvas"></div>
-  </div>
-</body>
+        
+        <hr style="margin: 20px 0; border: none; border-top: 2px solid rgba(255, 255, 255, 0.3);">
+        
+        <h4 style="margin: 0 0 15px 0; color: #9C27B0; font-size: 16px;">�� Private Group Room</h4>
+        <label for="roomCode" style="display: block; margin-top: 15px; font-weight: 600;">Room Code (Optional):</label>
+        <input type="text" id="roomCode" placeholder="Enter room code to join private group" maxlength="10">
+        
+        <button onclick="generateRoomCode()" style="margin-top: 10px; padding: 10px; background: #9C27B0; color: white; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 14px; transition: all 0.3s ease;">🎯 Generate Private Group Link</button>
+        <button onclick="joinRoom()" style="margin-top: 10px; padding: 10px; background: #FF9800; color: white; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 14px; transition: all 0.3s ease;">🚀 Join Private Room</button>
+      </div></body>
 </html>
 
